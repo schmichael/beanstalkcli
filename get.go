@@ -52,7 +52,7 @@ func runGet(cmd *Command) {
     for i := uint64(0); n == 0 || i < n; i++ {
         id, body, err := ts.Reserve(0)
         if err != nil {
-            if err.Error() == "reserve-with-timeout: unknown response: TIMED_OUT" {
+            if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
                 // Only write message if no jobs at all, but exit w/ 0
                 if i == 0 {
                     writeStderr("No jobs")
