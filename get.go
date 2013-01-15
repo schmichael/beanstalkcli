@@ -4,6 +4,7 @@ import (
     "github.com/kr/beanstalk"
     "fmt"
     "strings"
+    "time"
 )
 
 var cmdGet = &Command{
@@ -12,6 +13,7 @@ var cmdGet = &Command{
 }
 var getTubes = cmdGet.Flag.String("t", "default", "comma separated list of tubes")
 var getNum = cmdGet.Flag.Uint64("n", 1, "number to get, 0 gets all")
+var getTimeout = cmdGet.Flag.Int64("w", 0, "time to wait (reserve timeout), <0 means wait indefinitely")
 var getAction = cmdGet.Flag.String("x", "r", "action to take: [r]elease, [d]elete, [b]ury, [n]othing")
 var Actions = map[string]func(*beanstalk.Conn, uint64, []byte) {}
 
@@ -41,6 +43,7 @@ func runGet(cmd *Command) {
     conn := DialBeanstalk()
     ts := beanstalk.NewTubeSet(conn, strings.Split(*getTubes, ",")...)
     n := *getNum
+    w := time.Duration(*getTimeout) * time.Second
     var ok bool
     var action func(*beanstalk.Conn, uint64, []byte)
     if action, ok = Actions[*getAction]; !ok {
@@ -51,7 +54,7 @@ func runGet(cmd *Command) {
         fatal(2, "Using -n 0 and -x r together causes a tight loop and is disallowed")
     }
     for i := uint64(0); n == 0 || i < n; i++ {
-        id, body, err := ts.Reserve(0)
+        id, body, err := ts.Reserve(w)
         if err != nil {
             if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
                 // Only write message if no jobs at all, but exit w/ 0
