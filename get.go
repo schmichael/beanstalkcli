@@ -3,13 +3,14 @@ package main
 import (
     "github.com/kr/beanstalk"
     "fmt"
+    "strings"
 )
 
 var cmdGet = &Command{
     Name: "get",
     Desc: "get a job (reserve)",
 }
-var getTube = cmdGet.Flag.String("t", "default", "tube")
+var getTubes = cmdGet.Flag.String("t", "default", "comma separated list of tubes")
 var getNum = cmdGet.Flag.Uint64("n", 1, "number to get, 0 gets all")
 var getAction = cmdGet.Flag.String("x", "r", "action to take: [r]elease, [d]elete, [b]ury, [n]othing")
 var Actions = map[string]func(*beanstalk.Conn, uint64, []byte) {}
@@ -38,7 +39,7 @@ func getNoop(c *beanstalk.Conn, id uint64, body []byte) {}
 
 func runGet(cmd *Command) {
     conn := DialBeanstalk()
-    ts := beanstalk.NewTubeSet(conn, *getTube)
+    ts := beanstalk.NewTubeSet(conn, strings.Split(*getTubes, ",")...)
     n := *getNum
     var ok bool
     var action func(*beanstalk.Conn, uint64, []byte)
