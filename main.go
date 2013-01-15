@@ -45,6 +45,7 @@ func main() {
     for _, c := range commands {
         if args[0] == c.Name {
             found = true
+            c.Flag.Init(c.Name, flag.ExitOnError)
             c.Flag.Parse(args[1:])
             c.Run(c)
         }
